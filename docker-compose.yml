@@ -1,0 +1,46 @@
+version: "3.3"
+services:
+  traefik:
+    image: "traefik:latest"
+    container_name: "traefik"
+    restart: always
+    command:
+      - "--log.level=DEBUG"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.watch=true"
+      - "--providers.docker.exposedbydefault=true"
+      - "--entrypoints.web.address=:80"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.localhost`)"
+      - "traefik.http.routers.traefik.service=api@internal"
+    ports:
+      - "80:80"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    networks:
+      - rpgmaker
+
+  rpg:
+    working_dir: /var/www/html
+    container_name: rpg
+    image: antonioanerao/php8.1-apache-buster-node:1.1.0
+    restart: always
+    mem_limit: 1Gb
+    cpus: 0.4
+    networks:
+      - rpgmaker
+    ports:
+      - "8097:8097"
+
+    volumes:
+      - ./:/var/www/html
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=local"
+      - "traefik.http.routers.rpg.rule=Host(`rpg.docker.localhost`)"
+      - "traefik.http.routers.rpg.entrypoints=web"
+
+networks:
+  rpgmaker:
